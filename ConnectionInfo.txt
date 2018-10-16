@@ -1,0 +1,265 @@
+<ConnectionInfo>
+  <ConnectionStringToMySql>Server=lmb.gipa.ge;Database=lmb_gipa_ge;UserID=lmb.gipa.ge;Password=phee@boasooNgei3;</ConnectionStringToMySql>
+    <ConnectionStringToSqlserver>Server = localhost\ORIS; Database = Gipabase1; Integrated Security = SSPI;</ConnectionStringToSqlserver>
+  <SelectAndInsertStatements>
+    <SelectWithInsert>
+      <SelectStatement>
+
+IF OBJECT_ID('tempdb.dbo.#final', 'U') IS NOT NULL
+  DROP TABLE #final; 
+
+;with cte as (
+SELECT 
+YEAR([OM_Entries].[TransactionDate]) - case when MONTH([OM_Entries].[TransactionDate]) >= 9 then 0 else 1 end StudyYear,
+       [OM_Entries].[TransactionDate], 
+       [OM_Entries].[MainEntry], 
+       [OM_Entries].[CorrAccountID], 
+       [Accounts1].[Account] Account, 
+       dbo.U([Accounts1].[Name])                                                        AS [AccountName], 
+       [Accounts2].[Account]                                                            AS [CorrAccount], 
+       dbo.U([Accounts2].[Name])                                                        AS [CorrAccountName], 
+       [OM_Projects].[Name]                                                             AS [ProjectName], 
+       [OM_Entries].[DebitEquivalent], 
+       [OM_Entries].[CreditEquivalent]
+FROM   ([OM_Departments] 
+        RIGHT JOIN ([OM_Users] 
+                    RIGHT JOIN ([OM_Warehouses] 
+                                RIGHT JOIN ([OM_Expenditures] 
+                                            RIGHT JOIN ([OM_StockUnits] as [OM_StockUnits1] 
+                                                        RIGHT JOIN ([OM_StockUnits] as [OM_StockUnits2]
+                                                                    RIGHT JOIN ([OM_Projects]
+                                                                                RIGHT JOIN ([OM_Currencies] AS [Currency2]
+                                                                                            RIGHT JOIN ([OM_Currencies] AS [Currency1]
+                                                                                                        RIGHT JOIN ([OM_Accounts] AS [Accounts2]
+                                                                                                                    RIGHT JOIN ([OM_DocumentTypes] AS
+                                                                                                                               [DocumentTypes2]
+                                                                                                                    RIGHT JOIN (
+                                                                                                                    [OM_DocumentTypes]
+                                                                                                                               AS
+                                                                                                                               [DocumentTypes1]
+                                                                                                                    RIGHT JOIN (
+                                                                                                                    [OM_Accounts] AS
+                                                                                                                               [Accounts1]
+                                                                                                                                RIGHT JOIN (
+                                                                                                                                [OM_Transactions]
+                                                                                                                    RIGHT JOIN [OM_Entries]
+                                                                                                                            ON
+       [OM_Transactions].[TransactionsID] = [OM_Entries].[TransactionsID]) 
+                                                        ON 
+       [Accounts1].[AccountsID] = 
+       [OM_Entries].[AccountsID]) 
+       ON 
+       [DocumentTypes1].[DocumentTypesID] = 
+       [OM_Transactions].[DocumentTypesID]) 
+       ON [DocumentTypes2].[DocumentTypesID] = 
+       [OM_Entries].[RelatedDocumentTypesID]) 
+       ON 
+       [Accounts2].[AccountsID] = [OM_Entries].[CorrAccountID]) 
+       ON [Currency1].[CurrenciesID] = [OM_Entries].[CurrenciesID]) 
+       ON [Currency2].[CurrenciesID] = [OM_Entries].[AccountRegisterCurrenciesID]) 
+       ON [OM_Projects].[ProjectsID] = [OM_Entries].[ProjectsID]) 
+       ON [OM_StockUnits2].[StockUnitsID] = [Accounts1].[StockUnitsID]) 
+       ON [OM_StockUnits1].[StockUnitsID] = [OM_Entries].[StockUnitsID]) 
+       ON [OM_Expenditures].[ExpendituresID] = [OM_Entries].[ExpendituresID]) 
+       ON [OM_Warehouses].[WarehousesID] = [OM_Entries].[WarehousesID]) 
+       ON [OM_Users].[UsersID] = [OM_Transactions].[UsersID]) 
+       ON [OM_Departments].[DepartmentsID] = [OM_Transactions].[DepartmentsID]) 
+)
+,
+grp as ( select cte.AccountName, cte.Account Account, cte.CorrAccount CorrAccount, 
+		 cte.DebitEquivalent, cte.CreditEquivalent, cte.StudyYear, cte.TransactionDate, cte.CorrAccountName,
+		 case when Month(cte.TransactionDate) between 9 and 12 then 1 else 2 end as Semester
+from cte 
+where cte.AccountName is not null
+)
+,
+sel as (
+select 	grp.Semester,
+		grp.AccountName, [dbo].SelfOr141(grp.Account) Account, [dbo].SelfOr141(grp.CorrAccount) CorrAccount, 
+		SUM(grp.DebitEquivalent) SumDebitEquivalent, SUM(grp.CreditEquivalent) SumCreditEquivalent, 
+		grp.CorrAccountName, grp.StudyYear
+from grp
+group by grp.Account, grp.CorrAccount, grp.AccountName, grp.CorrAccountName, grp.StudyYear, grp.Semester
+
+)
+,irakli as (
+select 
+ROW_NUMBER() over (order by sel.StudyYear desc, sel.AccountName) as id,
+dbo.BeforeComma(sel.AccountName) piradi_nom, 
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '6110-1-1' then sel.SumDebitEquivalent else 0 end ) kontraqtis_tanxa,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '6110-1-4' AND sel.Semester = 1 then sel.SumDebitEquivalent else 0 end) dam_sagnebi1,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '6110-1-4' AND sel.Semester = 2 then sel.SumDebitEquivalent else 0 end) dam_sagnebi2,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '6120-2' AND sel.Semester = 1 then sel.SumCreditEquivalent else 0 end) sareitingo_fasdakleba,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '6120-2' AND sel.Semester = 2 then sel.SumCreditEquivalent else 0 end) sareitingo_fasdakleba2,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '6120-1' then sel.SumCreditEquivalent else 0 end) grantianis_fasdakleba,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '6120-3' then sel.SumCreditEquivalent else 0 end) extra,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '1411' then sel.SumCreditEquivalent else 0 end) sax_granti,
+SUM( case when sel.Account = '1410' and sel.CorrAccount = '1210' then sel.SumCreditEquivalent 
+		  when sel.Account = '1410' and sel.CorrAccount = 'B5' then sel.SumCreditEquivalent		
+		  else 0 end) charicxuli_studenti,
+SUM( case when sel.Account = '1411' and sel.CorrAccount = '1411-1495' then sel.SumCreditEquivalent else 0 end) charicxuli_granti,
+SUM( case when sel.Account = '1415' and sel.CorrAccount = '1410' then sel.SumDebitEquivalent else 0 end) akademiuris_tanxa, 
+sel.StudyYear
+FROM sel 
+where (sel.Account = '1410' or sel.Account = '1411' or sel.Account = '1415') 
+and sel.AccountName not like N',%'
+and sel.AccountName not like N'%204521794%'
+and sel.AccountName not like N'%204558353%'
+and sel.AccountName not like N'%405038631%'
+and sel.AccountName not like N'%469886232%'
+group by  sel.AccountName, sel.StudyYear
+)
+,
+im as (
+select irakli.id, irakli.piradi_nom, irakli.kontraqtis_tanxa, irakli.dam_sagnebi1, irakli.dam_sagnebi2, 
+irakli.sareitingo_fasdakleba, 
+irakli.sareitingo_fasdakleba2, 
+irakli.grantianis_fasdakleba, irakli.extra, irakli.sax_granti, irakli.charicxuli_studenti, 
+irakli.charicxuli_granti, irakli.akademiuris_tanxa, irakli.StudyYear,
+ac.RelatedRecord oris_id 
+from irakli
+join OM_Accounts ac on ac.Name like '%' + irakli.piradi_nom + '%'
+and ac.Account like '1410%'
+group by irakli.id, irakli.piradi_nom, irakli.kontraqtis_tanxa, 
+irakli.dam_sagnebi1,
+irakli.dam_sagnebi2,
+ irakli.sareitingo_fasdakleba, 
+irakli.grantianis_fasdakleba, irakli.extra, irakli.sax_granti, irakli.charicxuli_studenti, irakli.charicxuli_granti, irakli.akademiuris_tanxa, irakli.StudyYear,  
+ac.RelatedRecord, irakli.sareitingo_fasdakleba2
+)
+select  
+im.id, im.piradi_nom, im.oris_id, im.kontraqtis_tanxa, im.dam_sagnebi1, im.dam_sagnebi2, im.sareitingo_fasdakleba, im.sareitingo_fasdakleba2, im.grantianis_fasdakleba, im.extra, im.sax_granti, im.charicxuli_studenti, im.charicxuli_granti, im.StudyYear saswavlo_weli, im.akademiuris_tanxa, null wlis_vali
+   ,
+   case when im.StudyYear = 2016 /* 2016 Because initial balances existed ONLY for the year 2016 */ then isnull((select SUM(sb.EquivalentBalance) from OM_StartBalance sb 
+			   where sb.AccountsID = (select top 1 ac.AccountsID from OM_Accounts ac where ac.RelatedRecord = im.oris_id order by ac.OpenDate))
+			  , 0
+   ) else 0 end nashti,
+   im.kontraqtis_tanxa + im.dam_sagnebi1 + im.dam_sagnebi2 - im.sax_granti - im.charicxuli_studenti 
+			    - im.sareitingo_fasdakleba - im.sareitingo_fasdakleba2 - im.grantianis_fasdakleba - im.akademiuris_tanxa - im.extra wlis_jami
+into #final
+from im
+
+
+select 
+f.id, f.piradi_nom, f.oris_id, f.kontraqtis_tanxa, f.dam_sagnebi1, f.dam_sagnebi2, f.sareitingo_fasdakleba, f.sareitingo_fasdakleba2, f.grantianis_fasdakleba, f.extra, f.sax_granti, 
+			     f.charicxuli_studenti, f.charicxuli_granti,  f.saswavlo_weli, f.akademiuris_tanxa, f.wlis_vali, (select isnull(sum(isnull(inn.nashti,0) + isnull(inn.wlis_jami,0)),0) from #final inn where inn.piradi_nom = f.piradi_nom and inn.saswavlo_weli &lt; f.saswavlo_weli) wina_wlis_vali, f.nashti
+from #final f
+
+      </SelectStatement>
+      <InsertStatement>
+	insert into finance (id, piradi_nom, oris_id, kontraqtis_tanxa, dam_sagnebi, dam_sagnebi2, sareitingo_fasdakleba, sareitingo_fasdakleba2, grantianis_fasdakleba, extra, sax_granti, 
+			     charicxuli_studenti, charicxuli_granti,  saswavlo_weli, akademiuris_tanxa, wlis_vali, wina_wlis_vali, nashti) values 
+      </InsertStatement>
+    </SelectWithInsert>
+
+    <SelectWithInsert>
+      <SelectStatement>
+
+
+
+
+
+
+with cte as (
+SELECT 
+YEAR([OM_Entries].[TransactionDate]) - case when MONTH([OM_Entries].[TransactionDate]) >= 9 then 0 else 1 end StudyYear,
+       [OM_Entries].[TransactionDate], 
+       [OM_Entries].[MainEntry], 
+       [OM_Entries].[CorrAccountID], 
+       [Accounts1].[Account] Account, 
+       dbo.U([Accounts1].[Name])                                                        AS [AccountName], 
+       [Accounts2].[Account]                                                            AS [CorrAccount], 
+       dbo.U([Accounts2].[Name])                                                        AS [CorrAccountName], 
+       [OM_Projects].[Name]                                                             AS [ProjectName], 
+       [OM_Entries].[DebitEquivalent], 
+       [OM_Entries].[CreditEquivalent]
+FROM   ([OM_Departments] 
+        RIGHT JOIN ([OM_Users] 
+                    RIGHT JOIN ([OM_Warehouses] 
+                                RIGHT JOIN ([OM_Expenditures] 
+                                            RIGHT JOIN ([OM_StockUnits] as [OM_StockUnits1] 
+                                                        RIGHT JOIN ([OM_StockUnits] as [OM_StockUnits2]
+                                                                    RIGHT JOIN ([OM_Projects]
+                                                                                RIGHT JOIN ([OM_Currencies] AS [Currency2]
+                                                                                            RIGHT JOIN ([OM_Currencies] AS [Currency1]
+                                                                                                        RIGHT JOIN ([OM_Accounts] AS [Accounts2]
+                                                                                                                    RIGHT JOIN ([OM_DocumentTypes] AS
+                                                                                                                               [DocumentTypes2]
+                                                                                                                    RIGHT JOIN (
+                                                                                                                    [OM_DocumentTypes]
+                                                                                                                               AS
+                                                                                                                               [DocumentTypes1]
+                                                                                                                    RIGHT JOIN (
+                                                                                                                    [OM_Accounts] AS
+                                                                                                                               [Accounts1]
+                                                                                                                                RIGHT JOIN (
+                                                                                                                                [OM_Transactions]
+                                                                                                                    RIGHT JOIN [OM_Entries]
+                                                                                                                            ON
+       [OM_Transactions].[TransactionsID] = [OM_Entries].[TransactionsID]) 
+                                                        ON 
+       [Accounts1].[AccountsID] = 
+       [OM_Entries].[AccountsID]) 
+       ON 
+       [DocumentTypes1].[DocumentTypesID] = 
+       [OM_Transactions].[DocumentTypesID]) 
+       ON [DocumentTypes2].[DocumentTypesID] = 
+       [OM_Entries].[RelatedDocumentTypesID]) 
+       ON 
+       [Accounts2].[AccountsID] = [OM_Entries].[CorrAccountID]) 
+       ON [Currency1].[CurrenciesID] = [OM_Entries].[CurrenciesID]) 
+       ON [Currency2].[CurrenciesID] = [OM_Entries].[AccountRegisterCurrenciesID]) 
+       ON [OM_Projects].[ProjectsID] = [OM_Entries].[ProjectsID]) 
+       ON [OM_StockUnits2].[StockUnitsID] = [Accounts1].[StockUnitsID]) 
+       ON [OM_StockUnits1].[StockUnitsID] = [OM_Entries].[StockUnitsID]) 
+       ON [OM_Expenditures].[ExpendituresID] = [OM_Entries].[ExpendituresID]) 
+       ON [OM_Warehouses].[WarehousesID] = [OM_Entries].[WarehousesID]) 
+       ON [OM_Users].[UsersID] = [OM_Transactions].[UsersID]) 
+       ON [OM_Departments].[DepartmentsID] = [OM_Transactions].[DepartmentsID]) 
+),
+grp as ( select cte.AccountName, cte.Account Account, cte.CorrAccount CorrAccount, cte.CorrAccountName,
+		 cte.DebitEquivalent, cte.CreditEquivalent,cte.StudyYear,cte.TransactionDate
+from cte 
+where cte.AccountName is not null
+)
+
+select 
+ROW_NUMBER() over (order by grp.TransactionDate) as id,
+SUBSTRING ( grp.AccountName, 0, 12) piradi_nom,
+grp.CreditEquivalent tanxa,
+grp.TransactionDate tarigi
+from grp
+
+
+where 
+grp.Account like '1410%' and (grp.CorrAccount like '1210%' or grp.CorrAccount = 'B5' ) and 
+grp.AccountName not like N',%' and 
+grp.AccountName not like N'%204521794%' and 
+grp.AccountName not like N'%204558353%' and 
+grp.AccountName not like N'%405038631%' and 
+grp.CreditEquivalent > 0 
+
+					    
+
+
+
+
+
+
+
+
+	</SelectStatement>
+      <InsertStatement>
+	insert into finance_log (id, piradi_nom, tanxa, tarigi) values
+        </InsertStatement>
+    </SelectWithInsert>
+  </SelectAndInsertStatements>
+  <DeleteStatements>
+	<string> 
+		delete from finance
+	</string>
+	<string>
+		delete from finance_log
+	</string>
+  </DeleteStatements>
+</ConnectionInfo>

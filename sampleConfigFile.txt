@@ -1,0 +1,18 @@
+<ConnectionInfo>
+  <ConnectionStringToMySql>ConnectionStringToMSSql</ConnectionStringToMySql>
+  <ConnectionStringToSqlserver>ConnectionStringToSqlserver</ConnectionStringToSqlserver>
+  <SelectAndInsertStatements>
+    <SelectWithInsert>
+      <SelectStatement>select statement 1</SelectStatement>
+      <InsertStatement>insert statement 1</InsertStatement>
+    </SelectWithInsert>
+    <SelectWithInsert>
+      <SelectStatement>select statement 2</SelectStatement>
+      <InsertStatement>insert statement 2</InsertStatement>
+    </SelectWithInsert>
+  </SelectAndInsertStatements>
+  <DeleteStatements>
+    <String>delete statement 1</String>
+    <String>delete statement 2</String>
+  </DeleteStatements>
+</ConnectionInfo>

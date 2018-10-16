@@ -1,0 +1,1 @@
+  <ConnectionStringToSqlserver>Server = localhost\ORIS; Database = Gipabase1; Integrated Security = SSPI;</ConnectionStringToSqlserver>
