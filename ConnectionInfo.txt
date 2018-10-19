@@ -103,10 +103,10 @@ sel.StudyYear
 FROM sel 
 where (sel.Account = '1410' or sel.Account = '1411' or sel.Account = '1415') 
 and sel.AccountName not like N',%'
-and sel.AccountName not like N'%204521794%'
-and sel.AccountName not like N'%204558353%'
-and sel.AccountName not like N'%405038631%'
-and sel.AccountName not like N'%469886232%'
+--and sel.AccountName not like N'%204521794%'
+--and sel.AccountName not like N'%204558353%'
+--and sel.AccountName not like N'%405038631%'
+--and sel.AccountName not like N'%469886232%'
 group by  sel.AccountName, sel.StudyYear
 )
 ,
