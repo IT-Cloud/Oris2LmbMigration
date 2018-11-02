@@ -78,7 +78,7 @@ public class Program
 		{
 			var selectStatement = selectWithInsert.SelectStatement;
 			var selectCommand = new SqlCommand(selectStatement, connectionRead);
-			selectCommand.CommandTimeout = 360;
+			selectCommand.CommandTimeout = 1360;
 			SqlDataReader data;
 			try
 			{
